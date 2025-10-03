@@ -1,0 +1,1496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart City Integration - Weather & Pollution Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Display:wght@400;700&family=Raleway:wght@400;600;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #0B4F6C;
+            --secondary: #01BAEF;
+            --accent: #FBFBFF;
+            --dark: #040F16;
+            --light: #20A4F3;
+        }
+
+        body {
+            font-family: 'Lato', sans-serif;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--dark) 100%);
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(1, 186, 239, 0.1) 0%, transparent 70%);
+            animation: rotate 30s linear infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .particle {
+            position: fixed;
+            width: 6px;
+            height: 6px;
+            background: rgba(1, 186, 239, 0.4);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: float 15s infinite;
+            z-index: 0;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0) translateX(0) scale(1);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.8;
+            }
+            90% {
+                opacity: 0.8;
+            }
+            100% {
+                transform: translateY(-100vh) translateX(50px) scale(0.5);
+                opacity: 0;
+            }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+            opacity: 0;
+            animation: fadeInUp 1s ease forwards;
+        }
+
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            padding: 30px 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(1, 186, 239, 0.3);
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            0% {
+                transform: translateX(-100%) translateY(-100%) rotate(45deg);
+            }
+            100% {
+                transform: translateX(100%) translateY(100%) rotate(45deg);
+            }
+        }
+
+        h1, h2, h3, h4 {
+            font-family: 'Raleway', sans-serif;
+        }
+
+        h1 {
+            color: var(--accent);
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            position: relative;
+            font-weight: 700;
+        }
+
+        h1 i {
+            color: var(--light);
+            margin-right: 15px;
+            display: inline-block;
+        }
+
+        .subtitle {
+            color: var(--accent);
+            font-size: 1.1em;
+            opacity: 0.9;
+            font-weight: 300;
+        }
+
+        .alert-banner {
+            background: linear-gradient(135deg, var(--secondary) 0%, var(--light) 100%);
+            color: var(--dark);
+            padding: 18px 30px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 25px rgba(1, 186, 239, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            border-left: 5px solid var(--primary);
+            animation: slideInRight 0.8s ease 0.2s backwards;
+            position: relative;
+            overflow: hidden;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .alert-banner::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: alertShine 3s infinite;
+        }
+
+        @keyframes alertShine {
+            0% {
+                left: -100%;
+            }
+            50%, 100% {
+                left: 100%;
+            }
+        }
+
+        .alert-banner i {
+            font-size: 1.8em;
+            color: var(--primary);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.1);
+                opacity: 0.8;
+            }
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: linear-gradient(135deg, rgba(251, 251, 255, 0.95) 0%, rgba(255, 255, 255, 0.9) 100%);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 1px solid rgba(1, 186, 239, 0.2);
+            position: relative;
+            overflow: hidden;
+            opacity: 0;
+            transform: translateY(50px);
+            animation: cardFadeIn 0.6s ease forwards;
+        }
+
+        @keyframes cardFadeIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .card:nth-child(1) { animation-delay: 0.1s; }
+        .card:nth-child(2) { animation-delay: 0.2s; }
+        .card:nth-child(3) { animation-delay: 0.3s; }
+        .card:nth-child(4) { animation-delay: 0.4s; }
+        .card:nth-child(5) { animation-delay: 0.5s; }
+        .card:nth-child(6) { animation-delay: 0.6s; }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 150px;
+            height: 150px;
+            background: radial-gradient(circle, rgba(1, 186, 239, 0.15) 0%, transparent 70%);
+            border-radius: 50%;
+            transition: all 0.6s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-12px) scale(1.02);
+            box-shadow: 0 20px 60px rgba(1, 186, 239, 0.5);
+        }
+
+        .card:hover::before {
+            width: 300px;
+            height: 300px;
+            opacity: 0.3;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid var(--secondary);
+            position: relative;
+        }
+
+        .card-header::after {
+            content: '';
+            position: absolute;
+            bottom: -3px;
+            left: 0;
+            width: 0;
+            height: 3px;
+            background: var(--light);
+            transition: width 0.6s ease;
+        }
+
+        .card:hover .card-header::after {
+            width: 100%;
+        }
+
+        .card-header i {
+            font-size: 2em;
+            color: var(--secondary);
+            transition: all 1.2s ease;
+        }
+
+        .card:hover .card-header i {
+            transform: rotateY(360deg) scale(1.2);
+            color: var(--light);
+        }
+
+        .card-header h3 {
+            color: var(--primary);
+            font-size: 1.4em;
+            font-weight: 600;
+        }
+
+        .weather-main {
+            text-align: center;
+            padding: 20px 0;
+            background: linear-gradient(135deg, rgba(32,164,243,0.1) 0%, rgba(1,186,239,0.05) 100%);
+            border-radius: 15px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .weather-icon-large {
+            font-size: 4em;
+            color: var(--secondary);
+            margin-bottom: 10px;
+            display: inline-block;
+            animation: floatIcon 3s ease-in-out infinite;
+        }
+
+        @keyframes floatIcon {
+            0%, 100% {
+                transform: translateY(0) rotate(0deg);
+            }
+            50% {
+                transform: translateY(-15px) rotate(5deg);
+            }
+        }
+
+        .temperature {
+            font-size: 4.5em;
+            font-weight: bold;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin: 10px 0;
+            display: inline-block;
+            animation: numberCount 2s ease;
+        }
+
+        @keyframes numberCount {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .weather-desc {
+            font-size: 1.3em;
+            color: var(--primary);
+            margin-bottom: 20px;
+            font-weight: 600;
+            animation: fadeIn 1s ease 0.5s backwards;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .weather-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 25px;
+        }
+
+        .detail-item {
+            background: linear-gradient(135deg, rgba(1, 186, 239, 0.1) 0%, rgba(32, 164, 243, 0.05) 100%);
+            padding: 18px;
+            border-radius: 12px;
+            text-align: center;
+            border: 2px solid rgba(1, 186, 239, 0.2);
+            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            position: relative;
+            cursor: pointer;
+        }
+
+        .detail-item:hover {
+            transform: scale(1.1) translateY(-5px);
+            background: linear-gradient(135deg, rgba(1, 186, 239, 0.2) 0%, rgba(32, 164, 243, 0.15) 100%);
+            box-shadow: 0 8px 20px rgba(1, 186, 239, 0.4);
+        }
+
+        .detail-item:hover .tooltip {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) translateY(-5px);
+        }
+
+        .detail-item i {
+            font-size: 1.8em;
+            color: var(--secondary);
+            margin-bottom: 10px;
+            display: inline-block;
+            transition: transform 1s ease;
+        }
+
+        .detail-item:hover i {
+            transform: rotateZ(360deg);
+        }
+
+        .detail-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .detail-label {
+            font-size: 0.95em;
+            color: var(--primary);
+            margin-top: 5px;
+            opacity: 0.8;
+        }
+
+        .tooltip {
+            position: absolute;
+            bottom: 110%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--dark);
+            color: var(--accent);
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 0.85em;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 10;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 6px solid transparent;
+            border-top-color: var(--dark);
+        }
+
+        .aqi-display {
+            text-align: center;
+            padding: 25px;
+        }
+
+        .aqi-value {
+            font-size: 4em;
+            font-weight: bold;
+            margin: 20px 0;
+            display: inline-block;
+            animation: scaleIn 1s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        @keyframes scaleIn {
+            from {
+                transform: scale(0);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .aqi-good { 
+            background: linear-gradient(135deg, #4caf50, #8bc34a);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .aqi-moderate { 
+            background: linear-gradient(135deg, #ffeb3b, #ffc107);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .aqi-unhealthy { 
+            background: linear-gradient(135deg, #ff9800, #ff5722);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .aqi-label {
+            font-size: 1.3em;
+            padding: 12px 25px;
+            border-radius: 25px;
+            display: inline-block;
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            animation: slideUp 0.8s ease 0.3s backwards;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(30px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .aqi-good-bg { background: linear-gradient(135deg, #4caf50, #8bc34a); }
+        .aqi-moderate-bg { background: linear-gradient(135deg, #ffeb3b, #ffc107); color: #333; }
+        .aqi-unhealthy-bg { background: linear-gradient(135deg, #ff9800, #ff5722); }
+
+        .route-map {
+            width: 100%;
+            height: 450px;
+            background: var(--accent);
+            border-radius: 15px;
+            position: relative;
+            overflow: hidden;
+            border: 3px solid var(--secondary);
+        }
+
+        .map-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--secondary) 0%, var(--light) 100%);
+            color: var(--accent);
+            position: relative;
+        }
+
+        .map-placeholder::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400"><path d="M50 200 Q100 150, 150 200 T250 200 T350 200" stroke="rgba(255,255,255,0.3)" stroke-width="3" fill="none"/><path d="M100 250 Q150 220, 200 250 T300 250" stroke="rgba(255,255,255,0.2)" stroke-width="2" fill="none"/></svg>') center/cover;
+            animation: mapPulse 4s ease-in-out infinite;
+        }
+
+        @keyframes mapPulse {
+            0%, 100% {
+                opacity: 0.3;
+            }
+            50% {
+                opacity: 0.6;
+            }
+        }
+
+        .map-placeholder i {
+            font-size: 4em;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 1;
+            animation: mapRotate 8s linear infinite;
+        }
+
+        @keyframes mapRotate {
+            from {
+                transform: rotateY(0deg);
+            }
+            to {
+                transform: rotateY(360deg);
+            }
+        }
+
+        .route-info {
+            display: flex;
+            gap: 15px;
+            margin-top: 25px;
+            flex-wrap: wrap;
+        }
+
+        .route-badge {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: var(--accent);
+            padding: 12px 25px;
+            border-radius: 25px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 15px rgba(1, 186, 239, 0.3);
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            cursor: pointer;
+            opacity: 0;
+            animation: badgeFadeIn 0.5s ease forwards;
+        }
+
+        .route-badge:nth-child(1) { animation-delay: 0.1s; }
+        .route-badge:nth-child(2) { animation-delay: 0.2s; }
+        .route-badge:nth-child(3) { animation-delay: 0.3s; }
+        .route-badge:nth-child(4) { animation-delay: 0.4s; }
+
+        @keyframes badgeFadeIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .route-badge:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 8px 25px rgba(1, 186, 239, 0.5);
+        }
+
+        .chart-container {
+            height: 280px;
+            margin-top: 20px;
+        }
+
+        .suggestions-list {
+            list-style: none;
+        }
+
+        .suggestions-list li {
+            background: linear-gradient(135deg, rgba(1, 186, 239, 0.08) 0%, rgba(32, 164, 243, 0.05) 100%);
+            padding: 18px;
+            margin-bottom: 15px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            border-left: 4px solid var(--secondary);
+            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            opacity: 0;
+            animation: listFadeIn 0.5s ease forwards;
+        }
+
+        .suggestions-list li:nth-child(1) { animation-delay: 0.1s; }
+        .suggestions-list li:nth-child(2) { animation-delay: 0.2s; }
+        .suggestions-list li:nth-child(3) { animation-delay: 0.3s; }
+        .suggestions-list li:nth-child(4) { animation-delay: 0.4s; }
+        .suggestions-list li:nth-child(5) { animation-delay: 0.5s; }
+
+        @keyframes listFadeIn {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .suggestions-list li:hover {
+            background: linear-gradient(135deg, rgba(1, 186, 239, 0.2) 0%, rgba(32, 164, 243, 0.15) 100%);
+            transform: translateX(10px) scale(1.02);
+            box-shadow: 0 5px 20px rgba(1, 186, 239, 0.3);
+        }
+
+        .suggestions-list i {
+            color: var(--secondary);
+            font-size: 1.8em;
+            min-width: 40px;
+            transition: transform 1s ease;
+        }
+
+        .suggestions-list li:hover i {
+            transform: scale(1.2) rotate(10deg);
+        }
+
+        .tourism-card {
+            display: flex;
+            gap: 18px;
+            margin-bottom: 18px;
+            padding: 20px;
+            background: linear-gradient(135deg, rgba(1, 186, 239, 0.08) 0%, rgba(32, 164, 243, 0.05) 100%);
+            border-radius: 15px;
+            border: 2px solid rgba(1, 186, 239, 0.2);
+            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            opacity: 0;
+            animation: cardSlideIn 0.6s ease forwards;
+        }
+
+        .tourism-card:nth-child(1) { animation-delay: 0.1s; }
+        .tourism-card:nth-child(2) { animation-delay: 0.2s; }
+        .tourism-card:nth-child(3) { animation-delay: 0.3s; }
+        .tourism-card:nth-child(4) { animation-delay: 0.4s; }
+
+        @keyframes cardSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .tourism-card:hover {
+            transform: translateX(12px) scale(1.02);
+            box-shadow: 0 8px 30px rgba(1, 186, 239, 0.4);
+            background: linear-gradient(135deg, rgba(1, 186, 239, 0.15) 0%, rgba(32, 164, 243, 0.1) 100%);
+        }
+
+        .tourism-icon {
+            font-size: 2.5em;
+            color: var(--secondary);
+            min-width: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 1.2s ease;
+        }
+
+        .tourism-card:hover .tourism-icon {
+            transform: rotateY(360deg) scale(1.2);
+        }
+
+        .tourism-info h4 {
+            color: var(--primary);
+            margin-bottom: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+        }
+
+        .voice-control {
+            background: linear-gradient(135deg, rgba(1, 186, 239, 0.1) 0%, rgba(32, 164, 243, 0.05) 100%);
+            color: var(--primary);
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            border: 3px solid var(--secondary);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .voice-control::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(1, 186, 239, 0.2);
+            transform: translate(-50%, -50%);
+            transition: all 0.6s ease;
+        }
+
+        .voice-control:hover::before {
+            width: 400px;
+            height: 400px;
+        }
+
+        .voice-control i {
+            font-size: 3em;
+            margin-bottom: 15px;
+            color: var(--secondary);
+            position: relative;
+            z-index: 1;
+            display: inline-block;
+            animation: voicePulse 2s ease-in-out infinite;
+        }
+
+        @keyframes voicePulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.15);
+            }
+        }
+
+        .voice-control p {
+            position: relative;
+            z-index: 1;
+        }
+
+        .notifications {
+            max-height: 450px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+
+        .notifications::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .notifications::-webkit-scrollbar-track {
+            background: rgba(1, 186, 239, 0.1);
+            border-radius: 10px;
+        }
+
+        .notifications::-webkit-scrollbar-thumb {
+            background: var(--secondary);
+            border-radius: 10px;
+        }
+
+        .notification-item {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffe69c 100%);
+            border-left: 5px solid #ffc107;
+            padding: 18px;
+            margin-bottom: 15px;
+            border-radius: 10px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            opacity: 0;
+            animation: notificationSlide 0.5s ease forwards;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .notification-item:nth-child(1) { animation-delay: 0.1s; }
+        .notification-item:nth-child(2) { animation-delay: 0.2s; }
+        .notification-item:nth-child(3) { animation-delay: 0.3s; }
+        .notification-item:nth-child(4) { animation-delay: 0.4s; }
+
+        @keyframes notificationSlide {
+            from {
+                opacity: 0;
+                transform: translateX(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .notification-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 0;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.3);
+            transition: width 0.5s ease;
+        }
+
+        .notification-item:hover::before {
+            width: 100%;
+        }
+
+        .notification-item.alert-high {
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c2c7 100%);
+            border-left-color: #dc3545;
+            animation: shake 0.5s ease;
+        }
+
+        @keyframes shake {
+            0%, 100% {
+                transform: translateX(0);
+            }
+            25% {
+                transform: translateX(-5px);
+            }
+            75% {
+                transform: translateX(5px);
+            }
+        }
+
+        .color-legend {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        .color-badge {
+            padding: 10px 18px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            opacity: 0;
+            animation: badgePopIn 0.5s ease forwards;
+        }
+
+        .color-badge:nth-child(1) { animation-delay: 0.1s; }
+        .color-badge:nth-child(2) { animation-delay: 0.2s; }
+        .color-badge:nth-child(3) { animation-delay: 0.3s; }
+        .color-badge:nth-child(4) { animation-delay: 0.4s; }
+
+        @keyframes badgePopIn {
+            from {
+                opacity: 0;
+                transform: scale(0);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .color-badge:hover {
+            transform: scale(1.15) rotate(5deg);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+        .footer {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            margin-top: 40px;
+            color: var(--accent);
+            box-shadow: 0 10px 40px rgba(1, 186, 239, 0.3);
+            animation: footerSlide 1s ease 0.8s backwards;
+            position: relative;
+            overflow: hidden;
+        }
+
+        @keyframes footerSlide {
+            from {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .footer::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+            animation: footerShimmer 3s infinite;
+        }
+
+        @keyframes footerShimmer {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .footer p {
+            margin: 8px 0;
+            position: relative;
+            z-index: 1;
+        }
+
+        .parallax-container {
+            perspective: 1000px;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.8em;
+            }
+            
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .temperature {
+                font-size: 3.5em;
+            }
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, var(--primary), var(--dark));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            animation: fadeOut 1s ease 2s forwards;
+        }
+
+        @keyframes fadeOut {
+            to {
+                opacity: 0;
+                visibility: hidden;
+            }
+        }
+
+        .loading-spinner {
+            width: 80px;
+            height: 80px;
+            border: 8px solid rgba(1, 186, 239, 0.2);
+            border-top: 8px solid var(--secondary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <div class="container parallax-container">
+        <header>
+            <h1><i class="fas fa-city"></i> Smart City Weather & Pollution Dashboard</h1>
+            <p class="subtitle">Real-time Urban Environmental Monitoring & Transport Integration System - Hyderabad</p>
+        </header>
+
+        <div class="alert-banner">
+            <i class="fas fa-exclamation-triangle"></i>
+            <div>
+                <strong>Weather Alert:</strong> High temperatures expected today (36°C). AQI levels moderate (112) - Sensitive individuals should limit prolonged outdoor exposure.
+            </div>
+        </div>
+
+        <div class="dashboard-grid">
+            <!-- Current Weather Card -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-cloud-sun"></i>
+                    <h3>Current Weather - Hyderabad</h3>
+                </div>
+                <div class="weather-main">
+                    <div class="weather-icon-large">
+                        <i class="fas fa-sun"></i>
+                    </div>
+                    <div class="temperature">32°C</div>
+                    <div class="weather-desc">Sunny & Clear</div>
+                </div>
+                <div class="weather-details">
+                    <div class="detail-item">
+                        <i class="fas fa-tint"></i>
+                        <div class="detail-value">58%</div>
+                        <div class="detail-label">Humidity</div>
+                        <div class="tooltip">Amount of water vapor in the air</div>
+                    </div>
+                    <div class="detail-item">
+                        <i class="fas fa-wind"></i>
+                        <div class="detail-value">18 km/h</div>
+                        <div class="detail-label">Wind Speed</div>
+                        <div class="tooltip">Current wind velocity</div>
+                    </div>
+                    <div class="detail-item">
+                        <i class="fas fa-sun"></i>
+                        <div class="detail-value">8 UV</div>
+                        <div class="detail-label">UV Index</div>
+                        <div class="tooltip">Very High: Use SPF 30+ sunscreen</div>
+                    </div>
+                    <div class="detail-item">
+                        <i class="fas fa-eye"></i>
+                        <div class="detail-value">8 km</div>
+                        <div class="detail-label">Visibility</div>
+                        <div class="tooltip">Distance you can see clearly</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Air Quality Card -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-smog"></i>
+                    <h3>Air Quality Index (AQI)</h3>
+                </div>
+                <div class="aqi-display">
+                    <div class="aqi-value aqi-moderate">112</div>
+                    <div class="aqi-label aqi-moderate-bg">MODERATE</div>
+                    <p style="margin-top: 18px; color: var(--primary); font-weight: 500;">Acceptable for most people. Sensitive individuals should consider limiting prolonged outdoor exertion.</p>
+                </div>
+                <div class="weather-details" style="margin-top: 25px;">
+                    <div class="detail-item">
+                        <div class="detail-label">PM2.5</div>
+                        <div class="detail-value" style="font-size: 1.2em;">52 µg/m³</div>
+                        <div class="tooltip">Fine particles ≤2.5 micrometers. Can reach deep into lungs.</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">PM10</div>
+                        <div class="detail-value" style="font-size: 1.2em;">95 µg/m³</div>
+                        <div class="tooltip">Inhalable particles ≤10 micrometers. Dust, pollen, mold.</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">O₃</div>
+                        <div class="detail-value" style="font-size: 1.2em;">38 ppb</div>
+                        <div class="tooltip">Ozone: Ground-level gas formed by sunlight & pollutants.</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">NO₂</div>
+                        <div class="detail-value" style="font-size: 1.2em;">42 ppb</div>
+                        <div class="tooltip">Nitrogen Dioxide: From vehicle emissions & power plants.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Voice Assistant Card -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-universal-access"></i>
+                    <h3>Accessibility Features</h3>
+                </div>
+                <div class="voice-control">
+                    <i class="fas fa-volume-up"></i>
+                    <p style="margin-top: 12px; font-size: 1.2em; font-weight: 600;">Voice Weather Update Feature</p>
+                    <p style="font-size: 1em; margin-top: 8px; opacity: 0.85;">Available for visually impaired commuters</p>
+                    <p style="font-size: 0.9em; margin-top: 8px; opacity: 0.7; font-style: italic;">(Voice synthesis capability for screen readers)</p>
+                </div>
+                <div style="margin-top: 25px;">
+                    <h4 style="margin-bottom: 15px; color: var(--primary); font-size: 1.1em;">Color-Coded Air Quality Legend</h4>
+                    <div class="color-legend">
+                        <span class="color-badge" style="background: linear-gradient(135deg, #4caf50, #8bc34a); color: white;">Good (0-50)</span>
+                        <span class="color-badge" style="background: linear-gradient(135deg, #ffeb3b, #ffc107); color: #333;">Moderate (51-100)</span>
+                        <span class="color-badge" style="background: linear-gradient(135deg, #ff9800, #ff5722); color: white;">Unhealthy (101-200)</span>
+                        <span class="color-badge" style="background: linear-gradient(135deg, #f44336, #d32f2f); color: white;">Hazardous (200+)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Commuter Alerts -->
+        <div class="dashboard-grid">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-bell"></i>
+                    <h3>Commuter Alerts & Notifications</h3>
+                </div>
+                <div class="notifications">
+                    <div class="notification-item alert-high">
+                        <strong><i class="fas fa-exclamation-circle"></i> High Priority</strong>
+                        <p>High temperatures expected today (32-36°C). Stay hydrated and avoid outdoor activities during peak hours (12 PM - 4 PM).</p>
+                    </div>
+                    <div class="notification-item">
+                        <strong><i class="fas fa-info-circle"></i> Air Quality Alert</strong>
+                        <p>Moderate AQI near Industrial areas (Jeedimetla, Patancheru). Sensitive individuals should wear masks when traveling through these zones.</p>
+                    </div>
+                    <div class="notification-item">
+                        <strong><i class="fas fa-wind"></i> Weather Update</strong>
+                        <p>Light winds expected (18 km/h). Good ventilation conditions but dust may be present in construction areas.</p>
+                    </div>
+                    <div class="notification-item">
+                        <strong><i class="fas fa-sun"></i> UV Advisory</strong>
+                        <p>Very high UV index (Level 8). Apply SPF 30+ sunscreen if outdoors. Seek shade between 11 AM - 3 PM.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Event & Activity Suggestions -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-calendar-check"></i>
+                    <h3>Event & Activity Suggestions</h3>
+                </div>
+                <ul class="suggestions-list">
+                    <li>
+                        <i class="fas fa-running"></i>
+                        <div>
+                            <strong>Good for morning jogging</strong>
+                            <p style="font-size: 0.95em; color: var(--primary); opacity: 0.85; margin-top: 5px;">KBR Park - Temperature: 26°C (morning), Good air quality (AQI: 68)</p>
+                        </div>
+                    </li>
+                    <li>
+                        <i class="fas fa-exclamation-triangle" style="color: #ff9800;"></i>
+                        <div>
+                            <strong>Limit outdoor activities</strong>
+                            <p style="font-size: 0.95em; color: var(--primary); opacity: 0.85; margin-top: 5px;">Afternoon hours (12-4 PM) - High UV and temperature (36°C)</p>
+                        </div>
+                    </li>
+                    <li>
+                        <i class="fas fa-bicycle"></i>
+                        <div>
+                            <strong>Evening cycling recommended</strong>
+                            <p style="font-size: 0.95em; color: var(--primary); opacity: 0.85; margin-top: 5px;">Necklace Road - Pleasant evening temps (28°C), good visibility</p>
+                        </div>
+                    </li>
+                    <li>
+                        <i class="fas fa-swimmer"></i>
+                        <div>
+                            <strong>Swimming conditions excellent</strong>
+                            <p style="font-size: 0.95em; color: var(--primary); opacity: 0.85; margin-top: 5px;">Indoor pools recommended due to high UV levels</p>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Tourism & Attractions -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <h3>Tourism & Attractions Weather</h3>
+                </div>
+                <div class="tourism-card">
+                    <div class="tourism-icon">
+                        <i class="fas fa-landmark"></i>
+                    </div>
+                    <div class="tourism-info">
+                        <h4>Charminar & Old City</h4>
+                        <div class="tourism-weather" style="color: var(--primary); opacity: 0.85;">
+                            <span style="color: #ffeb3b; font-weight: 600;">Moderate Air Quality (AQI: 98)</span> | 
+                            <span>32°C</span> | 
+                            <span>Sunny</span>
+                        </div>
+                        <p style="font-size: 0.85em; margin-top: 5px; color: var(--primary); opacity: 0.75;">Visit early morning (before 10 AM) or late evening for comfortable experience.</p>
+                    </div>
+                </div>
+                <div class="tourism-card">
+                    <div class="tourism-icon">
+                        <i class="fas fa-tree"></i>
+                    </div>
+                    <div class="tourism-info">
+                        <h4>KBR National Park</h4>
+                        <div class="tourism-weather" style="color: var(--primary); opacity: 0.85;">
+                            <span style="color: #4caf50; font-weight: 600;">Good Air Quality (AQI: 68)</span> | 
+                            <span>30°C</span> | 
+                            <span>Clear Skies</span>
+                        </div>
+                        <p style="font-size: 0.85em; margin-top: 5px; color: var(--primary); opacity: 0.75;">Excellent for morning walks (6-9 AM). Carry water bottle.</p>
+                    </div>
+                </div>
+                <div class="tourism-card">
+                    <div class="tourism-icon">
+                        <i class="fas fa-water"></i>
+                    </div>
+                    <div class="tourism-info">
+                        <h4>Hussain Sagar Lake</h4>
+                        <div class="tourism-weather" style="color: var(--primary); opacity: 0.85;">
+                            <span style="color: #ffeb3b; font-weight: 600;">Moderate AQI (AQI: 85)</span> | 
+                            <span>32°C</span> | 
+                            <span>Sunny</span>
+                        </div>
+                        <p style="font-size: 0.85em; margin-top: 5px; color: var(--primary); opacity: 0.75;">Good for boating. Evening hours (5-7 PM) recommended.</p>
+                    </div>
+                </div>
+                <div class="tourism-card">
+                    <div class="tourism-icon">
+                        <i class="fas fa-fort-awesome"></i>
+                    </div>
+                    <div class="tourism-info">
+                        <h4>Golconda Fort</h4>
+                        <div class="tourism-weather" style="color: var(--primary); opacity: 0.85;">
+                            <span style="color: #ffeb3b; font-weight: 600;">Moderate AQI (AQI: 92)</span> | 
+                            <span>33°C</span> | 
+                            <span>Clear</span>
+                        </div>
+                        <p style="font-size: 0.85em; margin-top: 5px; color: var(--primary); opacity: 0.75;">Evening sound & light show recommended. Wear comfortable shoes.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Transport Route Integration -->
+        <div class="card" style="margin-bottom: 30px;">
+            <div class="card-header">
+                <i class="fas fa-route"></i>
+                <h3>Public Transport Weather Integration</h3>
+            </div>
+            <div class="route-map">
+                <div class="map-placeholder">
+                    <i class="fas fa-map-marked-alt"></i>
+                    <h3 style="font-size: 2em; margin-bottom: 10px;">Interactive Route Map</h3>
+                    <p style="font-size: 1.1em; margin-top: 10px;">Bus & Train Routes with Real-time Weather Overlays</p>
+                    <p style="font-size: 1em; margin-top: 8px; opacity: 0.9;">Integration with Google Maps API / Mapbox</p>
+                </div>
+            </div>
+            <div class="route-info">
+                <div class="route-badge" style="background: linear-gradient(135deg, #4caf50, #8bc34a);">
+                    <i class="fas fa-bus"></i>
+                    <span>Metro Line 1: Clear Weather</span>
+                </div>
+                <div class="route-badge" style="background: linear-gradient(135deg, #ffeb3b, #ffc107); color: #333;">
+                    <i class="fas fa-train"></i>
+                    <span>MMTS: Sunny Conditions</span>
+                </div>
+                <div class="route-badge" style="background: linear-gradient(135deg, #ff9800, #ff5722);">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span>Route 45: High AQI Zone</span>
+                </div>
+                <div class="route-badge" style="background: linear-gradient(135deg, var(--primary), var(--secondary));">
+                    <i class="fas fa-cloud-sun"></i>
+                    <span>ORR: Good Visibility</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="dashboard-grid">
+            <!-- Weather Trends Chart -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-chart-line"></i>
+                    <h3>24-Hour Temperature Trend</h3>
+                </div>
+                <div class="chart-container">
+                    <canvas id="tempChart"></canvas>
+                </div>
+            </div>
+
+            <!-- AQI Trends Chart -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-chart-area"></i>
+                    <h3>Weekly AQI Trend</h3>
+                </div>
+                <div class="chart-container">
+                    <canvas id="aqiChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <p style="font-size: 1.3em; font-weight: 600; margin-bottom: 10px;"><i class="fas fa-city"></i> Smart City Integration Platform</p>
+            <p style="font-size: 1.05em;">Improving Urban Planning & Transport Management through Real-time Environmental Data</p>
+            <p style="margin-top: 15px; font-size: 0.95em; opacity: 0.9;">Powered by Weather APIs • IoT Sensors • Advanced Analytics • AI Predictions</p>
+            <p style="margin-top: 10px; font-size: 0.85em; opacity: 0.8;">Making Cities Smarter, Safer, and More Sustainable</p>
+        </footer>
+    </div>
+
+    <script>
+        // Create floating particles
+        function createParticles() {
+            for (let i = 0; i < 15; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 15 + 's';
+                particle.style.animationDuration = (Math.random() * 10 + 10) + 's';
+                document.body.appendChild(particle);
+            }
+        }
+        
+        createParticles();
+
+        // Temperature Chart
+        const tempCtx = document.getElementById('tempChart').getContext('2d');
+        new Chart(tempCtx, {
+            type: 'line',
+            data: {
+                labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00', '24:00'],
+                datasets: [{
+                    label: 'Temperature (°C)',
+                    data: [24, 22, 26, 30, 34, 32, 28],
+                    borderColor: '#01BAEF',
+                    backgroundColor: 'rgba(1, 186, 239, 0.15)',
+                    tension: 0.4,
+                    fill: true,
+                    borderWidth: 3,
+                    pointBackgroundColor: '#0B4F6C',
+                    pointBorderColor: '#01BAEF',
+                    pointBorderWidth: 2,
+                    pointRadius: 5,
+                    pointHoverRadius: 7
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        labels: {
+                            color: '#0B4F6C',
+                            font: { size: 14, weight: 'bold' }
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: '#0B4F6C',
+                        titleColor: '#FBFBFF',
+                        bodyColor: '#FBFBFF',
+                        borderColor: '#01BAEF',
+                        borderWidth: 2
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        grid: { color: 'rgba(1, 186, 239, 0.1)' },
+                        ticks: { color: '#0B4F6C', font: { weight: 'bold' } }
+                    },
+                    x: {
+                        grid: { color: 'rgba(1, 186, 239, 0.1)' },
+                        ticks: { color: '#0B4F6C', font: { weight: 'bold' } }
+                    }
+                },
+                animation: {
+                    duration: 2000,
+                    easing: 'easeInOutQuart'
+                }
+            }
+        });
+
+        // AQI Chart
+        const aqiCtx = document.getElementById('aqiChart').getContext('2d');
+        new Chart(aqiCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                datasets: [{
+                    label: 'AQI Level',
+                    data: [85, 92, 78, 112, 105, 98, 108],
+                    backgroundColor: ['#ffeb3b', '#ffeb3b', '#4caf50', '#ff9800', '#ff9800', '#ffeb3b', '#ff9800'],
+                    borderColor: ['#ffc107', '#ffc107', '#388e3c', '#f57c00', '#f57c00', '#ffc107', '#f57c00'],
+                    borderWidth: 2,
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        labels: {
+                            color: '#0B4F6C',
+                            font: { size: 14, weight: 'bold' }
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: '#0B4F6C',
+                        titleColor: '#FBFBFF',
+                        bodyColor: '#FBFBFF',
+                        borderColor: '#01BAEF',
+                        borderWidth: 2,
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) label += ': ';
+                                label += context.parsed.y;
+                                let status = '';
+                                if (context.parsed.y <= 50) status = ' (Good)';
+                                else if (context.parsed.y <= 100) status = ' (Moderate)';
+                                else if (context.parsed.y <= 200) status = ' (Unhealthy)';
+                                else status = ' (Hazardous)';
+                                return label + status;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 200,
+                        grid: { color: 'rgba(1, 186, 239, 0.1)' },
+                        ticks: { color: '#0B4F6C', font: { weight: 'bold' } }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: '#0B4F6C', font: { weight: 'bold' } }
+                    }
+                },
+                animation: {
+                    duration: 2000,
+                    easing: 'easeInOutBounce'
+                }
+            }
+        });
+
+        // Parallax scroll effect
+        window.addEventListener('scroll', () => {
+            const scrolled = window.pageYOffset;
+            const parallax = document.querySelector('.parallax-container');
+            if (parallax) {
+                parallax.style.transform = `translateY(${scrolled * 0.05}px)`;
+            }
+        });
+
+        console.log('Smart City Integration Dashboard Loaded Successfully');
+        console.log('Ready for API Integration');
+    </script>
+</body>
+</html>
